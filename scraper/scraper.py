@@ -27,12 +27,17 @@ def get_property_urls(base_url, page):
             if href.startswith('https://www.immoweb.be/en/classified/'):
                 classified_urls.append(href)
                 (print(href))
-    return classified_urls
+
+        # dump to 1 list:
+        url_list = [item for sublist in classified_urls for item in sublist]        
+    return url_list
 
 # Define the pages to call 
 
 base_url = "https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page="
 property_urls = []
+
+# adding pauses to prevent web time out
 for page in range(1,100):
     urls = get_property_urls(base_url, page)
     property_urls.append(urls)
