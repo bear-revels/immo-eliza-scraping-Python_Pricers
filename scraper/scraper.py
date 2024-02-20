@@ -1,68 +1,97 @@
 import requests
-import json
+import csv
 import time
+import json
 from bs4 import BeautifulSoup
 
-def get_property_urls(base_url, page):
+class Immoscraper:
+
+    def __init__(self):
+        pass
     
-    # Construct the URL
-    url = base_url + str(page)
-    print('page: ' + str(page))
+    def get_property_urls(num_of_pages, session=None):
+        '''Gets a list of urls of properties for sale from immoweb
 
-    # Send a GET request to the URL
-    response = requests.get(url)
+        :param: number_of_pages(int): number of immoweb pages to process
+        :param: session (requests.Session): optional session object for requests
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the HTML content
-        soup = BeautifulSoup(response.content, "html.parser")
+        :return: (list) all property urls in the specified page(s)
+        '''
+        if session is None:
+            session = requests.Session()
 
-        # Find all href tags 
-        href_tags = soup.find_all(href=True)
-
-        # Filter out the URLs that belong to the specified domain
-        classified_urls = []
-        for tag in href_tags:
-            href = tag['href']
-            if href.startswith('https://www.immoweb.be/en/classified/'):
-                classified_urls.append(href)
-                (print(href))
-
-        # dump to 1 list:
-        url_list = [item for sublist in classified_urls for item in sublist]        
-    return url_list
-
-# Define the pages to call 
-
-base_url = "https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page="
-property_urls = []
-
-# adding pauses to prevent web time out
-for page in range(1,100):
-    urls = get_property_urls(base_url, page)
-    property_urls.append(urls)
-time.sleep(1)
-for page in range(100, 200):
-    urls = get_property_urls(base_url, page)
-    property_urls.append(urls)
-time.sleep(1)
-for page in range(200, 300):
-    urls = get_property_urls(base_url, page)
-    property_urls.append(urls)
-time.sleep(1)
-for page in range(300, 334):
-    urls = get_property_urls(base_url, page)
-    property_urls.append(urls)
-time.sleep(1)
-
-# Specify the file path where to save the JSON file
-json_file_path = "property_urls.json"
-
-# Write the property_urls list to the JSON file
-with open(json_file_path, 'w') as json_file:
-    json.dump(property_urls, json_file, indent=4)
-
-print("Property URLs have been saved to:", json_file_path)
+        all_urls = []
+        for i in range(1, num_of_pages + 1):
+ #           print(i)
+            root_url = f"https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page={i}"
+            req = session.get(root_url)
+            soup = BeautifulSoup(req.content, "html.parser")
+            if req.status_code == 200:
+                all_urls.extend(tag.get("href") for tag in soup.find_all("a", attrs={"class": "card__title-link"}))
+            else:
+                print("No url found.")
+                break
+#        print(f"Number of urls: {len(all_urls)}")
+        return all_urls
 
 
+    def get_property_details(url):
+        ''' Extract property details from a given url
 
+        :param: url (str): url of property to pull details from
+
+        :return: (dict) property details in a dictionary
+        '''
+        #Example: 'https://www.immoweb.be/en/classified/house/for-sale/leuven/3000/10850046'
+        property_dict = {
+            "property_id": 10850046, 
+            "locality_name": 'leuven', 
+            "postal_code": 3000, 
+            "price": 845000, 
+            "property_type": 1, 
+                # 1=house, 2=apartment
+            "subtype": 5, 
+                # 1=Bungalow, 2=Chalet, 3=Farmhouse, 4=Country house, 5=Town-house, 6=Mansion, 7=Villa,
+                # 8=Manor house, 9= Ground floor, 10=Duplex, 11=Triplex, 12=Studio, 13=Penthouse, 14=Loft
+            "sale_type": 'private',
+            "num_rooms": 3, 
+            "living_area": 173, 
+            "equipped_kitchen": 1, 
+            "furnished": 0, 
+            "open_fire": 0, 
+            "terrace_area": 6, 
+            "garden_area": 24,
+            "surface_of_good": 76, 
+            "num_facades": 2, 
+            "swimming_pool": 0, 
+            "building_state": 1,
+                # 1=good, 2=As new, 3=To restore, 4=Just renovated, 5=To be done up, 6=To renovate
+            "url": url
+        }
+
+        return property_dict
+
+
+    def write_dict_to_csv(data_dict, csv_filename):
+        keys = data_dict.keys()
+
+        with open(csv_filename, 'w', newline='') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=keys)        
+            writer.writeheader()        
+            writer.writerow(data_dict)
+    
+
+def write_json(content, file):
+    with open(file, 'w') as json_file:
+        json.dump(content, json_file, indent=4)
+
+    print("Property URLs have been saved to:", file)
+
+
+# start_time = time.time()
+# immo_urls = Immoscraper.get_property_urls(334) --> 403 seconds
+# end_time = time.time()
+# elapsed_time = end_time - start_time
+# print(f"Elapsed time: {elapsed_time} seconds")
+
+# write_json(immo_urls, "immo_urls.json")

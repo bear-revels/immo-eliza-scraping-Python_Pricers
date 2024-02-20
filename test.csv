@@ -1,0 +1,2 @@
+property_id,locality_name,postal_code,price,property_type,subtype,sale_type,num_rooms,living_area,equipped_kitchen,furnished,open_fire,terrace_area,garden_area,surface_of_good,num_facades,swimming_pool,building_state,url
+10850046,leuven,3000,845000,house,row,private,3,173,True,False,False,6,24,76,2,False,good,https://www.immoweb.be/en/classified/house/for-sale/leuven/3000/10850046
