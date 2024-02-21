@@ -9,31 +9,51 @@ class Immoscraper:
     def __init__(self):
         pass
     
+
     def get_property_urls(num_of_pages, session=None):
-        '''Gets a list of urls of properties for sale from immoweb
+        '''Gets a list of URLs of properties for sale from immoweb.
 
-        :param: number_of_pages(int): number of immoweb pages to process
-        :param: session (requests.Session): optional session object for requests
-
-        :return: (list) all property urls in the specified page(s)
+        :param num_of_pages: Number of immoweb pages to process (int).
+        :param session: Optional session object for requests (requests.Session).
+        :return: List of all property URLs in the specified page(s) (list).
         '''
+        # If session is not provided, create a new session
         if session is None:
             session = requests.Session()
 
+        # Initialize an empty list to store property URLs
         all_urls = []
+
+        # Iterate through the specified number of pages
         for i in range(1, num_of_pages + 1):
- #           print(i)
+            # Construct the URL for the current page
             root_url = f"https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page={i}"
+        
+            # Send a GET request to the current page URL
             req = session.get(root_url)
+        
+            # Parse the HTML content of the response
             soup = BeautifulSoup(req.content, "html.parser")
+        
+            # Check if the request was successful (status code 200)
             if req.status_code == 200:
-                all_urls.extend(tag.get("href") for tag in soup.find_all("a", attrs={"class": "card__title-link"}))
+                # Extract property URLs from the parsed HTML
+                result_divs = soup.select('div.card--result__body')
+                for div in result_divs:
+                    # Extract the URL from the current div and append it to the list
+                    page_link = div.select_one('a.card__title-link')['href']
+                    all_urls.append(page_link)
             else:
-                print("No url found.")
+                # If the request was not successful, print a message and exit the loop
+                print("No URL found.")
                 break
+    
+        # Close the session to release resources
         session.close()
-#        print(f"Number of urls: {len(all_urls)}")
+    
+        # Return the list of property URLs
         return all_urls
+
 
     def extract_details(url):  # Define a function to extract property details from the webpage
          
@@ -133,14 +153,21 @@ def write_json(content, file):
 
     print("Property URLs have been saved to:", file)
 
+
 start_time = time.time()
-all_property_details = []
-immo_urls = Immoscraper.get_property_urls(10) 
-for url in immo_urls:
-    print(url)
-    property_details = Immoscraper.extract_details(url)
-    all_property_details.append(property_details)
+
+immo_urls = Immoscraper.get_property_urls(1)  # to test only getting the urls list
+
+#all_property_details = []  # to test the whole script
+#for url in immo_urls:     
+#    print(url)
+#    property_details = Immoscraper.extract_details(url)
+#    all_property_details.append(property_details)
+
 end_time = time.time()
 elapsed_time = end_time - start_time
 print(f"Elapsed time: {elapsed_time} seconds")
-Immoscraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
+
+
+#Immoscraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
+# write_json(immo_urls, "url_list.json")
