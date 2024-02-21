@@ -148,7 +148,7 @@ def write_json(content, file):
 
 all_property_details = []
 scraper = ImmowebScraper()
-immo_urls = scraper.get_property_urls(1) 
+immo_urls = scraper.get_property_urls(300) 
 for url in immo_urls:
     property_details = ImmowebScraper.extract_details(url)
     all_property_details.append(property_details)

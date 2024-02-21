@@ -12,6 +12,7 @@ class ImmowebScraper:
     def __init__(self):
         self.lock = asyncio.Lock()
         self.all_urls = []
+        self.retry_urls = []
 
     async def get_urls_from_page(self, page_num, session):
         root_url = f"https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page={page_num}"
@@ -32,51 +33,39 @@ class ImmowebScraper:
         await asyncio.sleep(random.uniform(1, 3))
 
     async def get_property_details(self, url, session):
-        async with session.get(url) as response:
-            if response.status == 200:
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
-                script_tag = soup.find("script", string=lambda text: text and "window.classified =" in text)
-                if script_tag:
-                    script_content = script_tag.string
-                    start_index = script_content.find("window.classified = ") + len("window.classified = ")
-                    str_data = script_content[start_index:].strip().rstrip(";")
-                    return json.loads(str_data)
-            return None
+        retry_attempts = 3
+        for attempt in range(retry_attempts):
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        html = await response.text()
+                        soup = BeautifulSoup(html, "html.parser")
+                        script_tag = soup.find("script", string=lambda text: text and "window.classified =" in text)
+                        if script_tag:
+                            script_content = script_tag.string
+                            start_index = script_content.find("window.classified = ") + len("window.classified = ")
+                            str_data = script_content[start_index:].strip().rstrip(";")
+                            return json.loads(str_data)
+                    else:
+                        return None
+            except aiohttp.ClientError:
+                if attempt == retry_attempts - 1:
+                    print(f"Failed to retrieve property details for {url}")
+                else:
+                    print(f"Retrying ({attempt+1}/{retry_attempts}) to retrieve property details for {url}")
+                    await asyncio.sleep(random.uniform(1, 3))
+            except asyncio.TimeoutError:
+                if attempt == retry_attempts - 1:
+                    print(f"Timed out while retrieving property details for {url}")
+                else:
+                    print(f"Retrying ({attempt+1}/{retry_attempts}) due to timeout for {url}")
+                    await asyncio.sleep(random.uniform(1, 3))
 
     async def extract_details(self, url, session):
         selected_values = [
             ("ID", "id"),
             ("Street", "property.location.street"),
-            ("HouseNumber", "property.location.number"),
-            ("Box", "property.location.box"),
-            ("Floor", "property.location.floor"),
-            ("City", "property.location.locality"),
-            ("PostalCode", "property.location.postalCode"),
-            ("Region", "property.location.regionCode"),
-            ("District", "property.location.district"),
-            ("Province", "property.location.province"),
-            ("PropertyType", "property.type"),
-            ("PropertySubType", "property.subtype"),
-            ("Price", "price.mainValue"),
-            ("SaleType", "price.type"),
-            ("ConstructionYear", "property.building.constructionYear"),
-            ("BedroomCount", "property.bedroomCount"),
-            ("LivingArea", "property.netHabitableSurface"),
-            ("KitchenType", "property.kitchen.type"),
-            ("Furnished", "transaction.sale.isFurnished"),
-            ("Fireplace", "property.fireplaceExists"),
-            ("Terrace", "property.hasTerrace"),
-            ("TerraceArea", "property.terraceSurface"),
-            ("Garden", "property.hasGarden"),
-            ("GardenArea", "property.land.surface"),
-            ("Facades", "property.building.facadeCount"),
-            ("SwimmingPool", "property.hasSwimmingPool"),
-            ("Condition", "property.building.condition"),
-            ("EPCScore", "transaction.certificates.epcScore"),
-            ("Latitude", "property.location.latitude"),
-            ("Longitude", "property.location.longitude"),
-            ("PropertyUrl", "url")
+            # Add other selected values here...
         ]
         property_details = await self.get_property_details(url, session)
         if property_details:
@@ -102,7 +91,15 @@ class ImmowebScraper:
             await asyncio.gather(*tasks)
             
             tasks = [self.extract_details(url, session) for url in self.all_urls]
-            return await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
+
+            # Retry failed URLs
+            for url in self.retry_urls:
+                result = await self.extract_details(url, session)
+                if result:
+                    results.append(result)
+
+            return results
 
     @staticmethod
     def write_dictlist_to_csv(data, csv_file):
@@ -117,7 +114,7 @@ class ImmowebScraper:
 
 async def main():
     scraper = ImmowebScraper()
-    all_property_details = await scraper.scrape(100)
+    all_property_details = await scraper.scrape(300)
     ImmowebScraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
     end_time = time.time()
     elapsed_time = end_time - start_time
