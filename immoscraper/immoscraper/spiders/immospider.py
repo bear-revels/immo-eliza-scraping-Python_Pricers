@@ -280,9 +280,12 @@ def merge_csv_files(output='merged_data.csv'):
 if __name__ == '__main__':
     freeze_support()
     start_time = time.time()
-    # run_spider(ApartmentSpider, 'apartments.csv')
-    # run_spider(HouseSpider, 'houses.csv')
-    run_spider(HouseApartmentSpider, 'all.csv')
+    # run_spider(ApartmentSpider, 'apartments_querry.csv')
+    # run_spider(HouseSpider, 'houses_querry.csv')
+    run_spider(HouseApartmentSpider, 'house+apartment_querry.csv')
     # merge_csv_files()
     end_time = time.time()
-    print(f"Spiders finished in {end_time - start_time} seconds.")
+    print(f"Spiders and CSV finished in {end_time - start_time} seconds.")
+
+# from root folder with venv active (immo-eliza-scraping...):
+    # $ python ./immoscraper/immoscraper/spiders/immospider.py
