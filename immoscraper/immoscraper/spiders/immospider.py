@@ -20,7 +20,7 @@ class HouseSpider(scrapy.Spider):
     name = 'Immoweb_houses'
     start_urls = ['https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 100
+    looptime = 200
     
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
@@ -104,7 +104,7 @@ class ApartmentSpider(scrapy.Spider):
     name = 'Immoweb_apartments'
     start_urls = ['https://www.immoweb.be/en/search/apartment/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 100
+    looptime = 200
 
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
@@ -189,7 +189,7 @@ class HouseApartmentSpider(scrapy.Spider):
     name = 'Immoweb_houses'
     start_urls = ['https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 100
+    looptime = 200
     
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
