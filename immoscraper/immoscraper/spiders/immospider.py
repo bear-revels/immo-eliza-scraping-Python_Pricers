@@ -20,7 +20,7 @@ class HouseSpider(scrapy.Spider):
     name = 'Immoweb_houses'
     start_urls = ['https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 10
+    looptime = 100
     
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
@@ -81,24 +81,30 @@ class HouseSpider(scrapy.Spider):
            ("Longitude", "property.location.longitude"),
            ("PropertyUrl", "url")
         ]
-        filtered_dict_data = {"PropertyUrl": url}
+        filtered_dict_data = {}  # make this an empty dict & add the url key just before the return to ensure it's filled
         for new_key, old_key in selected_values:
             nested_keys = old_key.split(".")
             value = dict_data
             for nested_key in nested_keys:
                 if isinstance(value, dict) and nested_key in value:
-                    value = value[nested_key]
+                    value = value[nested_key]                    
                 else:
                     value = None
                     break
+            if isinstance(value, bool):
+                if value == True:
+                    value = 1
+                else:
+                    value = 0
             filtered_dict_data[new_key] = value
+        filtered_dict_data["PropertyUrl"] = url
         return filtered_dict_data
 
 class ApartmentSpider(scrapy.Spider):
     name = 'Immoweb_apartments'
     start_urls = ['https://www.immoweb.be/en/search/apartment/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 10
+    looptime = 100
 
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
@@ -159,17 +165,23 @@ class ApartmentSpider(scrapy.Spider):
            ("Longitude", "property.location.longitude"),
            ("PropertyUrl", "url")
         ]
-        filtered_dict_data = {"PropertyUrl": url}
+        filtered_dict_data = {}  # make this an empty dict & add the url key just before the return to ensure it's filled
         for new_key, old_key in selected_values:
             nested_keys = old_key.split(".")
             value = dict_data
             for nested_key in nested_keys:
                 if isinstance(value, dict) and nested_key in value:
-                    value = value[nested_key]
+                    value = value[nested_key]                    
                 else:
                     value = None
                     break
+            if isinstance(value, bool):
+                if value == True:
+                    value = 1
+                else:
+                    value = 0
             filtered_dict_data[new_key] = value
+        filtered_dict_data["PropertyUrl"] = url
         return filtered_dict_data
     
 
@@ -177,7 +189,7 @@ class HouseApartmentSpider(scrapy.Spider):
     name = 'Immoweb_houses'
     start_urls = ['https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page=1']
     times = 0
-    looptime = 10
+    looptime = 100
     
     def parse(self, response):
         for houses in response.css('div.card--result__body'):
@@ -200,7 +212,7 @@ class HouseApartmentSpider(scrapy.Spider):
         str_data = script_content[start_index:].strip().rstrip(";")  # Extract the JSON data as a string
         dict_data = json.loads(str_data)  # Parse the JSON data into a dictionary
         
-        filtered_dict_data = self.json_extraction(dict_data, url=response.url)  # Little adjustment to fit in my code
+        filtered_dict_data = self.json_extraction(dict_data, response.url)  # Little adjustment to fit in my code
 
         yield filtered_dict_data #returns filtered dict data to the scrapy pipeline
 
@@ -238,29 +250,45 @@ class HouseApartmentSpider(scrapy.Spider):
            ("Longitude", "property.location.longitude"),
            ("PropertyUrl", "url")
         ]
-        filtered_dict_data = {"PropertyUrl": url}
+        filtered_dict_data = {}  # make this an empty dict & add the url key just before the return to ensure it's filled
         for new_key, old_key in selected_values:
             nested_keys = old_key.split(".")
             value = dict_data
             for nested_key in nested_keys:
                 if isinstance(value, dict) and nested_key in value:
-                    value = value[nested_key]
+                    value = value[nested_key]                    
                 else:
                     value = None
                     break
+            if isinstance(value, bool):
+                if value == True:
+                    value = 1
+                else:
+                    value = 0
             filtered_dict_data[new_key] = value
+        filtered_dict_data["PropertyUrl"] = url
         return filtered_dict_data
 
 
 def process_setup(spider_class, output_file):
     # Sets up out a spider's settings & the intended output
         settings = get_project_settings()  #-> get the configurations like it would run from command line
+        # Setting up output
         settings.set('FEEDS', {
             output_file: {
                 'format': 'csv',
                 'overwrite': True,
             },
         })
+
+        # Trying different methods for not getting banned:
+            # Method 1: Adjust the Download Delay
+        # settings.set('DOWNLOAD_DELAY', 3)  # Delay in seconds
+                # Method 2: Use AutoThrottle
+        settings.set('AUTOTHROTTLE_ENABLED', True)
+        settings.set('AUTOTHROTTLE_START_DELAY', 0.01)  # Initial delay in seconds
+        settings.set('AUTOTHROTTLE_MAX_DELAY', 60)  # Maximum delay in seconds
+
         process = CrawlerProcess(settings=settings)
         process.crawl(spider_class)
         process.start()
@@ -271,8 +299,8 @@ def run_spider(spider_class, output_file):
     p.join()
 
 def merge_csv_files(output='merged_data.csv'):
-    apartments = pd.read_csv('apartments.csv')
-    houses = pd.read_csv('houses.csv')
+    apartments = pd.read_csv('apartments_querry.csv')
+    houses = pd.read_csv('houses_querry.csv')
     merged = pd.concat([apartments, houses])
     merged.to_csv(output, index=True)
 
@@ -280,10 +308,10 @@ def merge_csv_files(output='merged_data.csv'):
 if __name__ == '__main__':
     freeze_support()
     start_time = time.time()
-    # run_spider(ApartmentSpider, 'apartments_querry.csv')
-    # run_spider(HouseSpider, 'houses_querry.csv')
-    run_spider(HouseApartmentSpider, 'house+apartment_querry.csv')
-    # merge_csv_files()
+    run_spider(ApartmentSpider, 'apartments_querry.csv')
+    run_spider(HouseSpider, 'houses_querry.csv')
+    merge_csv_files()
+    # run_spider(HouseApartmentSpider, 'house+apartment_querry.csv')
     end_time = time.time()
     print(f"Spiders and CSV finished in {end_time - start_time} seconds.")
 
