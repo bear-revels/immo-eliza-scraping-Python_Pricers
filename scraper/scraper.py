@@ -3,12 +3,40 @@ import csv
 import time
 import json
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
+
+
 
 class Immoscraper:
 
     def __init__(self):
         pass
-    
+
+    def thread_properties_and_details():
+        immo_urls = Immoscraper.get_property_urls(1)           #get urls from ##pages
+        #creating seperate ThreadPoolExecutors for the loops throuhhout urls and html
+        url_executor = ThreadPoolExecutor(max_workers=5)    #5 can be changed
+        process_executor = ThreadPoolExecutor(max_workers=5)
+        try:
+            url_futures = []
+            for url in immo_urls:           #iteration for URLS asynchron
+                future = url_executor.submit(Immoscraper.extract_details, url)
+                url_futures.append(future)
+                #iteration trought HTML content
+            results = []
+            for url_future in url_futures:
+                result = process_executor.submit(Immoscraper.extract_details, url_future.result())
+                results.append(result)
+            #collect results
+            processed_results = []
+            for result in results:
+                processed_result = result.result()
+                processed_results.append(processed_result)
+        finally:
+            url_executor.shutdown()
+            process_executor.shutdown()
+
+
     def get_property_urls(num_of_pages, session=None):
         '''Gets a list of urls of properties for sale from immoweb
 
@@ -31,55 +59,101 @@ class Immoscraper:
             else:
                 print("No url found.")
                 break
+        session.close()
 #        print(f"Number of urls: {len(all_urls)}")
         return all_urls
 
+    def extract_details(url):  # Define a function to extract property details from the webpage
+         
+        selected_values = [  # Define a list of tuples specifying the desired attributes and their corresponding JSON paths
+            ("ID", "id"),
+            ("Street", "property.location.street"),
+            ("HouseNumber", "property.location.number"),
+            ("Box", "property.location.box"),
+            ("Floor", "property.location.floor"),
+            ("City", "property.location.locality"),
+            ("PostalCode", "property.location.postalCode"),
+            ("Region", "property.location.regionCode"),
+            ("District", "property.location.district"),
+            ("Province", "property.location.province"),
+            ("PropertyType", "property.type"),
+            ("PropertySubType", "property.subtype"),
+            ("Price", "price.mainValue"),
+            ("SaleType", "price.type"),
+            ("ConstructionYear", "property.building.constructionYear"),
+            ("BedroomCount", "property.bedroomCount"),
+            ("LivingArea", "property.netHabitableSurface"),
+            ("KitchenType", "property.kitchen.type"),
+            ("Furnished", "transaction.sale.isFurnished"),
+            ("Fireplace", "property.fireplaceExists"),
+            ("Terrace", "property.hasTerrace"),
+            ("TerraceArea", "property.terraceSurface"),
+            ("Garden", "property.hasGarden"),
+            ("GardenArea", "property.land.surface"),
+            ("Facades", "property.building.facadeCount"),
+            ("SwimmingPool", "property.hasSwimmingPool"),
+            ("Condition", "property.building.condition"),
+            ("EPCScore", "transaction.certificates.epcScore"),
+            ("Latitude", "property.location.latitude"),
+            ("Longitude", "property.location.longitude"),
+            ("PropertyUrl", "url")
+        ]
 
-    def get_property_details(url):
-        ''' Extract property details from a given url
+        r = requests.get(url)  # Send a GET request to the URL
+        soup = BeautifulSoup(r.content, "html.parser")  # Create a BeautifulSoup object to parse the HTML content
+        script_tag = soup.find("script", string=lambda text: text and "window.classified =" in text)  # Find the script tag containing "window.classified = "
+        script_content = script_tag.string  # Get the content of the script tag
+        start_index = script_content.find("window.classified = ") + len("window.classified = ")  # Find the start index of the JSON data
+        str_data = script_content[start_index:].strip().rstrip(";")  # Extract the JSON data as a string
+        dict_data = json.loads(str_data)  # Parse the JSON data into a dictionary
 
-        :param: url (str): url of property to pull details from
-
-        :return: (dict) property details in a dictionary
-        '''
-        #Example: 'https://www.immoweb.be/en/classified/house/for-sale/leuven/3000/10850046'
-        property_dict = {
-            "property_id": 10850046, 
-            "locality_name": 'leuven', 
-            "postal_code": 3000, 
-            "price": 845000, 
-            "property_type": 1, 
-                # 1=house, 2=apartment
-            "subtype": 5, 
-                # 1=Bungalow, 2=Chalet, 3=Farmhouse, 4=Country house, 5=Town-house, 6=Mansion, 7=Villa,
-                # 8=Manor house, 9= Ground floor, 10=Duplex, 11=Triplex, 12=Studio, 13=Penthouse, 14=Loft
-            "sale_type": 'private',
-            "num_rooms": 3, 
-            "living_area": 173, 
-            "equipped_kitchen": 1, 
-            "furnished": 0, 
-            "open_fire": 0, 
-            "terrace_area": 6, 
-            "garden_area": 24,
-            "surface_of_good": 76, 
-            "num_facades": 2, 
-            "swimming_pool": 0, 
-            "building_state": 1,
-                # 1=good, 2=As new, 3=To restore, 4=Just renovated, 5=To be done up, 6=To renovate
-            "url": url
-        }
-
-        return property_dict
+        filtered_dict_data = {}  # Initialize an empty dictionary to store filtered property details
+        for new_key, old_key in selected_values:  # Iterate over the selected values
+            nested_keys = old_key.split(".")  # Split the nested keys by dot notation
+            value = dict_data  # Initialize the value with the parsed JSON data
+            for nested_key in nested_keys:  # Iterate over the nested keys
+                if isinstance(value, dict) and nested_key in value:  # Check if the value is a dictionary and the nested key exists
+                    value = value[nested_key]  # Update the value with the nested value
+                else:
+                    value = None  # Set the value to None if the nested key does not exist
+                    break
+            filtered_dict_data[new_key] = value  # Assign the filtered value to the new key in the filtered dictionary
+        filtered_dict_data["Property url"] = url  # Add the URL of the property to the filtered dictionary
+        return filtered_dict_data   # Return the list of property details
 
 
-    def write_dict_to_csv(data_dict, csv_filename):
+    def write_to_csv(data_dict, csv_filename):
         keys = data_dict.keys()
 
         with open(csv_filename, 'w', newline='') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=keys)        
             writer.writeheader()        
             writer.writerow(data_dict)
-    
+
+
+    def write_dictlist_to_csv(data, csv_file):
+        """
+        Write a list of dictionaries to a CSV file.
+
+        Args:
+        - data (list of dict): List of dictionaries to be written to the CSV file.
+        - csv_file (str): Path to the CSV file.
+
+        Returns:
+        - None
+        """
+        with open(csv_file, 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=data[0].keys())
+
+            # Write header
+            writer.writeheader()
+
+            # Write rows
+            for row in data:
+                writer.writerow(row)
+
+        print(f'Data has been written to {csv_file}')
+   
 
 def write_json(content, file):
     with open(file, 'w') as json_file:
@@ -87,63 +161,15 @@ def write_json(content, file):
 
     print("Property URLs have been saved to:", file)
 
-
-
-
-# start_time = time.time()
-# immo_urls = Immoscraper.get_property_urls(334) --> 403 seconds
-# end_time = time.time()
-# elapsed_time = end_time - start_time
-# print(f"Elapsed time: {elapsed_time} seconds")
-
-# write_json(immo_urls, "immo_urls.json")
-    
-
-
-#import library:
-from concurrent.futures import ThreadPoolExecutor
-#making a function to thread the data
-def thread_properties():
-    immo = Immoscraper()
-    urls = immo.get_property_urls(10)           #get urls from 10pages
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        executor.map(immo.get_property_details, urls)
-
-
-# to compaire with and without threading:
-def time_with_theading():
-    immo = Immoscraper()
-    start_time = time.time()
-    urls = immo.get_property_urls(10)           #get urls from 10pages
-
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        executor.map(immo.get_property_details, urls)
-    
-    end_time = time.time()
-    time_with_threading = end_time - start_time
-    print("Time with treading: ", time_with_theading)
-
-def time_without_threading():
-    immo = Immoscraper()
-    start_time = time.time()
-    urls = immo.get_property_urls(10)           #get urls from 10pages
-
-    for url in urls:
-        immo.get_property_urls(10)              #get url for 10 pages
-
-    end_time = time.time()
-    time_without_threading = end_time - start_time
-    print("Time with treading: ", time_without_threading)
-
-
-
-
-
-
-if __name__ == "__main__":
-    time_with_theading()
-    time_without_threading()
-
-
-
-     
+start_time = time.time()
+# all_property_details = []
+# immo_urls = Immoscraper.get_property_urls(10) 
+# for url in immo_urls:
+#     print(url)
+#     property_details = Immoscraper.extract_details(url)
+#     all_property_details.append(property_details)
+p = Immoscraper.thread_properties_and_details()
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time} seconds")
+# Immoscraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
