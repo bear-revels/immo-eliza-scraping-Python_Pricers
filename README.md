@@ -4,7 +4,7 @@
 
 ## 📒 Description
 
-Immo-eliza-scraping is a Python program designed to scrape property listing data from immoweb, Belgium's leading real estate website. It gathers the unique listing URL for each active listing and then retrieves specific property data from each of the listings. The property data is then compiled into a CSV file for later data analysis and model training. 
+Immo-eliza-scraping is a Python program designed to scrape property listing data from immoweb, Belgium's leading real estate website. It gathers the unique listing URL for each active listing and then retrieves specific property data from each of the listings. The property data is then compiled into a CSV file for later use in data analysis, visualization, model training, and pricing forecasts.
 
 ## 📦 Repo structure
 
