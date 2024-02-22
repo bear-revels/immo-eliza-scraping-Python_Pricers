@@ -1,5 +1,4 @@
 import csv
-import time
 import json
 import asyncio
 import aiohttp

@@ -1,18 +1,11 @@
 import time
 import asyncio
-from src.scraper import ImmowebScraper
-from src.utils import write_dictlist_to_csv
-
-async def main():
-    scraper = ImmowebScraper()
-    all_property_details = await scraper.scrape(1)
-    write_dictlist_to_csv(all_property_details, "./data/all_property_details.csv")
-
+from src.utils import run_scraper
 
 start_time = time.time()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_scraper(10))
 
 end_time = time.time()
 elapsed_time = end_time - start_time

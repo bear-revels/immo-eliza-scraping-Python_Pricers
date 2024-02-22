@@ -1,4 +1,6 @@
 import csv
+from .scraper import ImmowebScraper
+
 
 def write_dictlist_to_csv(data, csv_file):
     filtered_data = [row for row in data if row is not None]  # Filter out None values
@@ -10,3 +12,10 @@ def write_dictlist_to_csv(data, csv_file):
         print(f'Data has been written to {csv_file}')
     else:
         print("No data to write.")
+
+
+async def run_scraper(page_count=1):
+    scraper = ImmowebScraper()
+    all_property_details = await scraper.scrape(page_count)
+    write_dictlist_to_csv(all_property_details, "././data/all_property_detaile(1s.csv")
+
