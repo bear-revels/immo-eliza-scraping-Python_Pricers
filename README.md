@@ -19,6 +19,7 @@ This also provides an answer to the question 'why don't we just use an existing 
 │ └── all_property_details.csv
 ├── src/
 │ └── scraper.py
+│ └── utils.py
 ├── .gitignore
 ├── main.py
 ├── README.md
