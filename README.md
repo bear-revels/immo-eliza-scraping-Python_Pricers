@@ -6,6 +6,11 @@
 
 Immo-eliza-scraping is a Python program designed to scrape property listing data from immoweb, Belgium's leading real estate website, using a combination of techniques including BeautifulSoup, Scrapy, and threading. It gathers the unique listing URL for each active listing and then retrieves specific property data from each of the listings. The property data is then compiled into a CSV file for later use in data analysis, visualization, model training, and pricing forecasts. There are more than 10,000 active listing at any given time, so the scraping tools and code were written with performance optimization in mind.
 
+A great property of this program is the supply of the most up to date version of the housing data. This ensures that, even in times of fluctuating housing prices, the dataset can always be used to accurately predict housing prices.
+This also provides an answer to the question 'why don't we just use an existing dataset?'
+
+![cool_image](https://media.istockphoto.com/id/932743856/vector/property-prices-illustration.jpg?s=612x612&w=0&k=20&c=MpCykgUFuTxQje0JksjDApv9u5ywb5nkJE0brZ-4GiA=)
+
 ## 📦 Repo structure
 
 ```
@@ -36,9 +41,9 @@ Immo-eliza-scraping is a Python program designed to scrape property listing data
     python main.py
     ```
 
-4. The program will first scrape the URLs of active real estate listings from the immoweb webpages and then extract the property details from each listing. The resulting data will be saved to a CSV file named "real_estate_listing_data.csv" in the root directory.
+4. The program will first scrape the URLs of active real estate listings from the immoweb webpages and then extract the property details from each listing. The resulting data will be saved to a CSV file named "all_property_details.csv" in the data folder.
 
-5. The total execution time will be displayed in the terminal upon completion, estimated at ~6 minutes.
+5. The total execution time will be displayed in the terminal upon completion, estimated at ~10 minutes.
 
 ## ⏱️ Timeline
 
@@ -50,6 +55,6 @@ This project was completed as part of the AI Boocamp at BeCode.org by team Pytho
 
 Connect with the Python Pricers on LinkedIn:
 1. [Bear Revels](https://www.linkedin.com/in/bear-revels/)
-2. [Caroline](https://www.linkedin.com/in/bear-revels/)
+2. [Caroline](https://www.linkedin.com/in/caroline-van-hoeke-8a3b87123/)
 3. [Geraldine Nadela](https://www.linkedin.com/in/geraldine-nadela-60827a11)
-4. [Viktor](https://www.linkedin.com/in/bear-revels/)
+4. [Viktor](https://www.linkedin.com/in/viktor-cosaert/)
