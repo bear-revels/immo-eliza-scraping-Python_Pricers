@@ -65,8 +65,37 @@ class ImmowebScraper:
         selected_values = [
             ("ID", "id"),
             ("Street", "property.location.street"),
-            # Add other selected values here...
+            ("HouseNumber", "property.location.number"),
+            ("Box", "property.location.box"),
+            ("Floor", "property.location.floor"),
+            ("City", "property.location.locality"),
+            ("PostalCode", "property.location.postalCode"),
+            ("Region", "property.location.regionCode"),
+            ("District", "property.location.district"),
+            ("Province", "property.location.province"),
+            ("PropertyType", "property.type"),
+            ("PropertySubType", "property.subtype"),
+            ("Price", "price.mainValue"),
+            ("SaleType", "price.type"),
+            ("ConstructionYear", "property.building.constructionYear"),
+            ("BedroomCount", "property.bedroomCount"),
+            ("LivingArea", "property.netHabitableSurface"),
+            ("KitchenType", "property.kitchen.type"),
+            ("Furnished", "transaction.sale.isFurnished"),
+            ("Fireplace", "property.fireplaceExists"),
+            ("Terrace", "property.hasTerrace"),
+            ("TerraceArea", "property.terraceSurface"),
+            ("Garden", "property.hasGarden"),
+            ("GardenArea", "property.land.surface"),
+            ("Facades", "property.building.facadeCount"),
+            ("SwimmingPool", "property.hasSwimmingPool"),
+            ("Condition", "property.building.condition"),
+            ("EPCScore", "transaction.certificates.epcScore"),
+            ("Latitude", "property.location.latitude"),
+            ("Longitude", "property.location.longitude"),
+            ("PropertyUrl", "url")
         ]
+
         property_details = await self.get_property_details(url, session)
         if property_details:
             filtered_dict_data = {}
