@@ -160,8 +160,8 @@ class ImmowebScraper:
 
 async def main():
     scraper = ImmowebScraper()
-    all_property_details = await scraper.scrape(200)
-    ImmowebScraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
+    all_property_details = await scraper.scrape(10)
+    ImmowebScraper.write_dictlist_to_csv(all_property_details, "./data/all_property_details.csv")
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Elapsed time: {elapsed_time} seconds")
