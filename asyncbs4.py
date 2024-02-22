@@ -13,10 +13,10 @@ class ImmowebScraper:
         self.lock = asyncio.Lock()
         self.all_urls = []
         self.retry_urls = []
+        self.failed_urls = []
 
-    async def get_urls_from_page(self, page_num, session):
-        root_url = f"https://www.immoweb.be/en/search/house-and-apartment/for-sale?countries=BE&page={page_num}"
-        async with session.get(root_url) as response:
+    async def get_urls_from_page(self, root_url, page_num, session):
+        async with session.get(root_url.format(page_num=page_num)) as response:
             if response.status == 200:
                 html = await response.text()
                 soup = BeautifulSoup(html, "html.parser")
@@ -27,8 +27,8 @@ class ImmowebScraper:
                         async with self.lock:
                             self.all_urls.append(page_link)
             else:
-                print("No url found.")
-        
+                print(f"No URLs found for {root_url.format(page_num=page_num)}")
+
         # Introduce a random delay between 1 and 3 seconds before processing the next page
         await asyncio.sleep(random.uniform(1, 3))
 
@@ -60,6 +60,10 @@ class ImmowebScraper:
                 else:
                     print(f"Retrying ({attempt+1}/{retry_attempts}) due to timeout for {url}")
                     await asyncio.sleep(random.uniform(1, 3))
+
+        # If all retry attempts fail, add the URL to the list of failed URLs
+        self.failed_urls.append(url)
+        return None
 
     async def extract_details(self, url, session):
         selected_values = [
@@ -115,8 +119,13 @@ class ImmowebScraper:
     async def scrape(self, num_of_pages):
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for i in range(1, num_of_pages + 1):
-                tasks.append(self.get_urls_from_page(i, session))
+            urls = [
+                "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale?countries=BE&page={page_num}"
+            ]
+            for url in urls:
+                for i in range(1, num_of_pages + 1):
+                    tasks.append(self.get_urls_from_page(url, i, session))
             await asyncio.gather(*tasks)
             
             tasks = [self.extract_details(url, session) for url in self.all_urls]
@@ -128,22 +137,30 @@ class ImmowebScraper:
                 if result:
                     results.append(result)
 
+            # Write failed URLs to 'failed_urls.csv' file
+            if self.failed_urls:
+                with open('failed_urls.csv', 'w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Failed URLs'])
+                    writer.writerows([[url] for url in self.failed_urls])
+
             return results
 
     @staticmethod
     def write_dictlist_to_csv(data, csv_file):
-        if data:
+        filtered_data = [row for row in data if row is not None]  # Filter out None values
+        if filtered_data:
             with open(csv_file, 'w', newline='') as file:
-                writer = csv.DictWriter(file, fieldnames=data[0].keys())
+                writer = csv.DictWriter(file, fieldnames=filtered_data[0].keys())
                 writer.writeheader()
-                writer.writerows(data)
+                writer.writerows(filtered_data)
             print(f'Data has been written to {csv_file}')
         else:
             print("No data to write.")
 
 async def main():
     scraper = ImmowebScraper()
-    all_property_details = await scraper.scrape(300)
+    all_property_details = await scraper.scrape(200)
     ImmowebScraper.write_dictlist_to_csv(all_property_details, "all_property_details.csv")
     end_time = time.time()
     elapsed_time = end_time - start_time
