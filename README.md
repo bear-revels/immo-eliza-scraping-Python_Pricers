@@ -10,10 +10,14 @@ Immo-eliza-scraping is a Python program designed to scrape property listing data
 
 ```
 .
+├── data/
+│ └── all_property_details.csv
 ├── src/
 │ └── scraper.py
+├── .gitignore
 ├── main.py
-└── README.md
+├── README.md
+└── requirements.txt
 ```
 
 ## 🎮 Usage
