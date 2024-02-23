@@ -7,7 +7,7 @@ start_time = time.time()  # Record start time of the program
 if __name__ == "__main__":
     # Give the time start running program
     give_time()
-    # Run the scraper asynchronously for 10 pages
+    # Run the scraper asynchronously for # of pages entered
     asyncio.run(run_scraper(333))
 
 end_time = time.time()  # Record end time of the program
