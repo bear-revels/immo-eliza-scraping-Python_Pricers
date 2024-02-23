@@ -56,6 +56,6 @@ This project was completed as part of the AI Boocamp at BeCode.org by team Pytho
 
 Connect with the Python Pricers on LinkedIn:
 1. [Bear Revels](https://www.linkedin.com/in/bear-revels/)
-2. [Caroline](https://www.linkedin.com/in/caroline-van-hoeke-8a3b87123/)
+2. [Caroline Van Hoeke](https://www.linkedin.com/in/caroline-van-hoeke-8a3b87123/)
 3. [Geraldine Nadela](https://www.linkedin.com/in/geraldine-nadela-60827a11)
-4. [Viktor](https://www.linkedin.com/in/viktor-cosaert/)
+4. [Viktor Cosaert](https://www.linkedin.com/in/viktor-cosaert/)
