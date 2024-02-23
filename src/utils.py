@@ -1,6 +1,6 @@
 import csv  # Import CSV module for reading and writing CSV files
 from .scraper import ImmowebScraper  # Import ImmowebScraper class from scraper module
-
+from datetime import datetime   #Import datetime module to give the start_time when running program
 
 def write_dictlist_to_csv(data, csv_file):
     """
@@ -39,3 +39,8 @@ async def run_scraper(page_count=1):
     all_property_details = await scraper.scrape(page_count)  # Scrape property details
     write_dictlist_to_csv(all_property_details, "././data/all_property_details.csv")
     # Write property details to CSV file
+
+def give_time():
+    c = datetime.now()
+    print("Begin running at: ", c.strftime('%H:%M:%S'))    
+    print("Data loading...")
