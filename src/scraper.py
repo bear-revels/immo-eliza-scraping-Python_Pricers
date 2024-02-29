@@ -4,6 +4,7 @@ import asyncio  # Import asyncio module for asynchronous programming
 import aiohttp  # Import aiohttp module for making asynchronous HTTP requests
 import random  # Import random module for generating random numbers
 from bs4 import BeautifulSoup  # Import BeautifulSoup from bs4 module for parsing HTML
+from unidecode import unidecode
 
 class ImmowebScraper:
     """
@@ -18,6 +19,7 @@ class ImmowebScraper:
         self.all_urls = []  # Initialize an empty list to store all property URLs
         self.retry_urls = []  # Initialize an empty list to store URLs that need to be retried
         self.failed_urls = []  # Initialize an empty list to store URLs that failed
+        self.semaphore = asyncio.Semaphore(10)  # Limit concurrency to 10 requests
 
     async def get_urls_from_page(self, root_url, page_num, session):
         """
@@ -27,21 +29,20 @@ class ImmowebScraper:
         :param page_num: Page number to fetch URLs from (int).
         :param session: aiohttp ClientSession object.
         """
-        async with session.get(root_url.format(page_num=page_num)) as response:
-            # Send a GET request to the specified page URL
-            if response.status == 200:  # Check if the response status is OK (200)
-                html = await response.text()  # Get the HTML content of the response
-                soup = BeautifulSoup(html, "html.parser")  # Create a BeautifulSoup object to parse HTML
-                result_divs = soup.select('div.card--result__body')  # Select all result divs
-                for div in result_divs:  # Iterate over each result div
-                    page_link = div.select_one('a.card__title-link')['href']  # Extract property URL
-                    if 'real-estate-project' not in page_link:  # Check if it's not a project URL
-                        async with self.lock:  # Acquire the lock to safely update the list
-                            self.all_urls.append(page_link)  # Append the URL to the list
-            else:
-                print(f"No URLs found for {root_url.format(page_num=page_num)}")  # Print message if no URLs found
-
-        await asyncio.sleep(random.uniform(1, 3))  # Introduce random delay before processing next page
+        async with self.semaphore:
+            async with session.get(root_url.format(page_num=page_num)) as response:
+                if response.status == 200:
+                    html = await response.text()
+                    soup = BeautifulSoup(html, "html.parser")
+                    result_divs = soup.select('div.card--result__body')
+                    if not result_divs:
+                        return
+                    for div in result_divs:
+                        page_link = div.select_one('a.card__title-link')['href']
+                        if 'real-estate-project' not in page_link:
+                            async with self.lock:
+                                self.all_urls.append(page_link)
+                await asyncio.sleep(random.uniform(1, 5))
 
     async def get_property_details(self, url, session):
         """
@@ -129,21 +130,24 @@ class ImmowebScraper:
                     ("PropertyUrl", "url")
                 ]
 
-        property_details = await self.get_property_details(url, session)  # Get property details
-        if property_details:  # Check if property details exist
-            filtered_dict_data = {}  # Initialize dictionary to store filtered details
-            for new_key, old_key in selected_values:  # Iterate over selected values
-                nested_keys = old_key.split(".")  # Split nested keys by dot notation
-                value = property_details  # Initialize value with property details
-                for nested_key in nested_keys:  # Iterate over nested keys
-                    value = value.get(nested_key)  # Get nested value
-                    if value is None:  # Check if nested value is None
-                        break  # Break loop if nested value is None
-                if isinstance(value, bool):  # Check if value is boolean
-                    value = int(value)  # Convert boolean value to integer
-                filtered_dict_data[new_key] = value  # Add filtered value to dictionary
-            filtered_dict_data["Property url"] = url  # Add property URL to dictionary
-            return filtered_dict_data  # Return dictionary containing property details
+        property_details = await self.get_property_details(url, session)
+        if property_details:
+            filtered_dict_data = {}
+            for new_key, old_key in selected_values:
+                nested_keys = old_key.split(".")
+                value = property_details
+                for nested_key in nested_keys:
+                    value = value.get(nested_key)
+                    if value is None:
+                        break
+                if isinstance(value, bool):
+                    value = int(value)
+                # Remove accents from value if it's a string
+                if isinstance(value, str):
+                    value = unidecode(value)
+                filtered_dict_data[new_key] = value
+            filtered_dict_data["Property url"] = url
+            return filtered_dict_data
 
     async def scrape(self, num_of_pages):
         """
@@ -158,6 +162,7 @@ class ImmowebScraper:
                 "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page={page_num}",
                 "https://www.immoweb.be/en/search/apartment/for-sale?countries=BE&page={page_num}"
             ]
+
             # List of URLs to scrape properties from
             for url in urls:  # Iterate over URLs
                 for i in range(1, num_of_pages + 1):  # Iterate over specified number of pages
