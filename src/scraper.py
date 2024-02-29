@@ -52,7 +52,7 @@ class ImmowebScraper:
         :return: Dictionary containing property details.
         """
         retry_attempts = 3
-        base_delay = 1  # Initial delay in seconds
+        base_delay = 2  # Initial delay in seconds
         for attempt in range(retry_attempts):
             try:
                 async with session.get(url, timeout=30) as response:
