@@ -2,6 +2,10 @@
 
 [![forthebadge made-with-python](https://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
+## 🛠️ Updates
+
+- Added a semaphore to limit concurrency for fetching property details in order to reduce the load on the server and improve the performance of the scraping process.
+
 ## 📒 Description
 
 Immo-eliza-scraping is a Python program designed to scrape property listing data from immoweb, Belgium's leading real estate website, using a combination of techniques including BeautifulSoup, Scrapy, and threading. It gathers the unique listing URL for each active listing and then retrieves specific property data from each of the listings. The property data is then compiled into a CSV file for later use in data analysis, visualization, model training, and pricing forecasts. There are more than 10,000 active listing at any given time, so the scraping tools and code were written with performance optimization in mind.
@@ -44,7 +48,7 @@ This also provides an answer to the question 'why don't we just use an existing 
 
 4. The program will first scrape the URLs of active real estate listings from the immoweb webpages and then extract the property details from each listing. The resulting data will be saved to a CSV file named "all_property_details.csv" in the data folder.
 
-5. The total execution time will be displayed in the terminal upon completion, estimated at ~10 minutes.
+5. The total execution time will be displayed in the terminal upon completion, estimated at ~90 minutes.
 
 ## ⏱️ Timeline
 
