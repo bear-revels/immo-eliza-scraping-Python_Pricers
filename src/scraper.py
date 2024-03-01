@@ -19,7 +19,9 @@ class ImmowebScraper:
         self.all_urls = []  # Initialize an empty list to store all property URLs
         self.retry_urls = []  # Initialize an empty list to store URLs that need to be retried
         self.failed_urls = []  # Initialize an empty list to store URLs that failed
-        self.semaphore = asyncio.Semaphore(10)  # Limit concurrency to 10 requests
+        self.semaphore = asyncio.Semaphore(22)  # Limit concurrency to # requests
+        self.details_semaphore = asyncio.Semaphore(20)  # Limit concurrency to # requests
+
 
     async def get_urls_from_page(self, root_url, page_num, session):
         """
@@ -42,7 +44,7 @@ class ImmowebScraper:
                         if 'real-estate-project' not in page_link:
                             async with self.lock:
                                 self.all_urls.append(page_link)
-                await asyncio.sleep(random.uniform(1, 5))
+                await asyncio.sleep(random.uniform(2, 4))
 
     async def get_property_details(self, url, session):
         """
@@ -55,20 +57,21 @@ class ImmowebScraper:
         retry_attempts = 3  # Set maximum retry attempts
         for attempt in range(retry_attempts):  # Iterate over retry attempts
             try:
-                async with session.get(url) as response:  # Send a GET request to the URL
-                    if response.status == 200:  # Check if the response status is OK (200)
-                        html = await response.text()  # Get the HTML content of the response
-                        soup = BeautifulSoup(html, "html.parser")  # Create a BeautifulSoup object
-                        script_tag = soup.find("script", string=lambda text: text and "window.classified =" in text)
-                        # Find the script tag containing property details
-                        if script_tag:  # Check if script tag exists
-                            script_content = script_tag.string  # Get the content of the script tag
-                            start_index = script_content.find("window.classified = ") + len("window.classified = ")
-                            str_data = script_content[start_index:].strip().rstrip(";")
-                            # Extract JSON data as a string
-                            return json.loads(str_data)  # Parse JSON data into a dictionary
-                    else:
-                        return None  # Return None if response status is not OK
+                async with self.details_semaphore:  # Acquire semaphore for concurrency control
+                    async with session.get(url) as response:  # Send a GET request to the URL
+                        if response.status == 200:  # Check if the response status is OK (200)
+                            html = await response.text()  # Get the HTML content of the response
+                            soup = BeautifulSoup(html, "html.parser")  # Create a BeautifulSoup object
+                            script_tag = soup.find("script", string=lambda text: text and "window.classified =" in text)
+                            # Find the script tag containing property details
+                            if script_tag:  # Check if script tag exists
+                                script_content = script_tag.string  # Get the content of the script tag
+                                start_index = script_content.find("window.classified = ") + len("window.classified = ")
+                                str_data = script_content[start_index:].strip().rstrip(";")
+                                # Extract JSON data as a string
+                                return json.loads(str_data)  # Parse JSON data into a dictionary
+                        else:
+                            return None  # Return None if response status is not OK
             except aiohttp.ClientError:  # Handle client errors
                 if attempt == retry_attempts - 1:  # Check if it's the last retry attempt
                     print(f"Failed to retrieve property details for {url}")  # Print failure message
@@ -159,8 +162,28 @@ class ImmowebScraper:
         async with aiohttp.ClientSession() as session:  # Create aiohttp ClientSession object
             tasks = []  # Initialize list to store asynchronous tasks
             urls = [
-                "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page={page_num}",
-                "https://www.immoweb.be/en/search/apartment/for-sale?countries=BE&page={page_num}"
+                "https://www.immoweb.be/en/search/apartment/for-sale/antwerp/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/west-flanders/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/east-flanders/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/limburg/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/flemish-brabant/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/hainaut/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/liege/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/luxembourg/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/namur/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/walloon-brabant/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/apartment/for-sale/brussels/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/antwerp/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/west-flanders/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/east-flanders/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/limburg/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/flemish-brabant/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/hainaut/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/liege/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/luxembourg/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/namur/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/walloon-brabant/province?countries=BE&priceType=SALE_PRICE&page={page_num}",
+                "https://www.immoweb.be/en/search/house/for-sale/brussels/province?countries=BE&priceType=SALE_PRICE&page={page_num}"
             ]
 
             # List of URLs to scrape properties from
