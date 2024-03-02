@@ -114,6 +114,7 @@ class ImmowebScraper:
                     ("PropertySubType", "property.subtype"),
                     ("Price", "price.mainValue"),
                     ("SaleType", "price.type"),
+                    ("BidStylePricing", "transaction.sale.hasStartingPrice"),
                     ("ConstructionYear", "property.building.constructionYear"),
                     ("BedroomCount", "property.bedroomCount"),
                     ("LivingArea", "property.netHabitableSurface"),
@@ -128,8 +129,14 @@ class ImmowebScraper:
                     ("SwimmingPool", "property.hasSwimmingPool"),
                     ("Condition", "property.building.condition"),
                     ("EPCScore", "transaction.certificates.epcScore"),
+                    ("EnergyConsumptionPerSqm", "transaction.certificates.primaryEnergyConsumptionPerSqm"),
                     ("Latitude", "property.location.latitude"),
                     ("Longitude", "property.location.longitude"),
+                    ("ListingCreateDate", "publication.creationDate"),
+                    ("ListingExpirationDate", "publication.expirationDate"),
+                    ("ListingCloseDate",""),
+                    ("bookmarkCount", "statistics.bookmarkCount"),
+                    ("ViewCount", "statistics.viewCount"),
                     ("PropertyUrl", "url")
                 ]
 
