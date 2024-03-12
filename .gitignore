@@ -1,4 +1,5 @@
 scraper_env/
 env/
 venv/
+python_pricers_env/
 __pycache__/
